@@ -1,0 +1,48 @@
+buildscript {
+  repositories {
+    mavenLocal()
+    jcenter()
+  }
+}
+plugins {
+    id 'org.springframework.boot' version '2.0.0.RELEASE'
+}
+
+apply plugin: 'java'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'application'
+
+group = 'com.foilen'
+version = System.getenv('VERSION')?:'master-SNAPSHOT'
+
+repositories {
+  mavenLocal()
+  jcenter()
+  mavenCentral()
+}
+
+dependencies {
+
+  // Databases
+  compile "org.mariadb.jdbc:mariadb-java-client"
+  compile "org.springframework.boot:spring-boot-starter-jdbc"
+  
+  // Misc
+  compile "args4j:args4j:$argsVersion"
+  compile "com.foilen:jl-smalltools:$smalltoolsVersion"
+  compile "com.google.guava:guava:$guavaVersion"
+  compile "org.apache.commons:commons-lang3"
+  compile "org.springframework.boot:spring-boot-starter-json"
+
+  // Test
+  testCompile 'junit:junit'
+  testCompile "org.springframework.boot:spring-boot-starter-test"
+}
+
+bootJar {
+	launchScript()
+}
+
+mainClassName = "com.foilen.james.manager.JamesManagerApp"
+
+task wrapper(type: Wrapper) { gradleVersion = '4.1' }
