@@ -14,43 +14,43 @@ import com.google.common.collect.ComparisonChain;
 
 public class EmailRedirectionParts extends AbstractBasics implements Comparable<EmailRedirectionParts> {
 
-    private String fromEmail;
-    private String toUser;
-    private String toDomain;
+    private String fromUser;
+    private String fromDomain;
+    private String toEmail;
 
     @Override
     public int compareTo(EmailRedirectionParts o) {
         return ComparisonChain.start() //
-                .compare(this.fromEmail, o.fromEmail) //
-                .compare(this.toUser, o.toUser) //
-                .compare(this.toDomain, o.toDomain) //
+                .compare(this.fromUser, o.fromUser) //
+                .compare(this.fromDomain, o.fromDomain) //
+                .compare(this.toEmail, o.toEmail) //
                 .result();
     }
 
-    public String getFromEmail() {
-        return fromEmail;
+    public String getFromDomain() {
+        return fromDomain;
     }
 
-    public String getToDomain() {
-        return toDomain;
+    public String getFromUser() {
+        return fromUser;
     }
 
-    public String getToUser() {
-        return toUser;
+    public String getToEmail() {
+        return toEmail;
     }
 
-    public EmailRedirectionParts setFromEmail(String fromEmail) {
-        this.fromEmail = fromEmail;
+    public EmailRedirectionParts setFromDomain(String fromDomain) {
+        this.fromDomain = fromDomain;
         return this;
     }
 
-    public EmailRedirectionParts setToDomain(String toDomain) {
-        this.toDomain = toDomain;
+    public EmailRedirectionParts setFromUser(String fromUser) {
+        this.fromUser = fromUser;
         return this;
     }
 
-    public EmailRedirectionParts setToUser(String toUser) {
-        this.toUser = toUser;
+    public EmailRedirectionParts setToEmail(String toEmail) {
+        this.toEmail = toEmail;
         return this;
     }
 

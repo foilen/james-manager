@@ -133,25 +133,25 @@ public class UpdateJamesService extends AbstractBasics implements EventCallback<
 
             // Update redirections
             {
-                List<EmailRedirectionParts> existing = jdbcTemplate.query("SELECT TARGET_ADDRESS, USER_NAME, DOMAIN_NAME FROM JAMES_RECIPIENT_REWRITE ORDER BY TARGET_ADDRESS, USER_NAME, DOMAIN_NAME",
+                List<EmailRedirectionParts> existing = jdbcTemplate.query("SELECT FROM_USER, FROM_DOMAIN, TO_EMAIL FROM FOILEN_REDIRECTIONS ORDER BY FROM_USER, FROM_DOMAIN, TO_EMAIL",
                         new RowMapper<EmailRedirectionParts>() {
                             @Override
                             public EmailRedirectionParts mapRow(ResultSet rs, int rowNum) throws SQLException {
                                 EmailRedirectionParts item = new EmailRedirectionParts();
-                                item.setFromEmail(rs.getString(1));
-                                item.setToUser(rs.getString(2));
-                                item.setToDomain(rs.getString(3));
+                                item.setFromUser(rs.getString(1));
+                                item.setFromDomain(rs.getString(2));
+                                item.setToEmail(rs.getString(3));
                                 return item;
                             }
                         });
                 List<EmailRedirectionParts> desired = new ArrayList<>();
                 for (EmailManagerConfigRedirection redirection : config.getRedirections()) {
+                    String[] fromParts = redirection.getEmail().split("@");
                     for (String to : redirection.getRedirectTos()) {
-                        String[] toParts = to.split("@");
                         desired.add(new EmailRedirectionParts() //
-                                .setFromEmail(redirection.getEmail()) //
-                                .setToUser(toParts[0]) //
-                                .setToDomain(toParts[1]));
+                                .setFromUser(fromParts[0]) //
+                                .setFromDomain(fromParts[1]) //
+                                .setToEmail(to));
                     }
                 }
                 desired = desired.stream().sorted().distinct().collect(Collectors.toList());
@@ -167,15 +167,15 @@ public class UpdateJamesService extends AbstractBasics implements EventCallback<
                     @Override
                     public void leftOnly(EmailRedirectionParts existing) {
                         logger.info("[REDIRECTION] Delete {}", existing);
-                        jdbcTemplate.update("DELETE FROM JAMES_RECIPIENT_REWRITE WHERE TARGET_ADDRESS = ? AND USER_NAME = ? AND DOMAIN_NAME = ?", //
-                                existing.getFromEmail(), existing.getToUser(), existing.getToDomain());
+                        jdbcTemplate.update("DELETE FROM FOILEN_REDIRECTIONS WHERE FROM_USER = ? AND FROM_DOMAIN = ? AND TO_EMAIL = ?", //
+                                existing.getFromUser(), existing.getFromDomain(), existing.getToEmail());
                     }
 
                     @Override
                     public void rightOnly(EmailRedirectionParts desired) {
                         logger.info("[REDIRECTION] Add {}", desired);
-                        jdbcTemplate.update("INSERT INTO JAMES_RECIPIENT_REWRITE (TARGET_ADDRESS, USER_NAME, DOMAIN_NAME) VALUES (?, ?, ?)", //
-                                desired.getFromEmail(), desired.getToUser(), desired.getToDomain());
+                        jdbcTemplate.update("INSERT INTO FOILEN_REDIRECTIONS (FROM_USER, FROM_DOMAIN, TO_EMAIL) VALUES (?, ?, ?)", //
+                                desired.getFromUser(), desired.getFromDomain(), desired.getToEmail());
                     }
                 });
             }
