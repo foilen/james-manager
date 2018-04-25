@@ -23,6 +23,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
+import com.foilen.james.manager.RetryException;
 import com.foilen.james.manager.config.EmailManagerConfig;
 import com.foilen.james.manager.config.EmailManagerConfigAccount;
 import com.foilen.james.manager.config.EmailManagerConfigDatabase;
@@ -41,7 +42,7 @@ public class UpdateJamesService extends AbstractBasics implements EventCallback<
     private ConfigurationService configurationService;
 
     @Override
-    public void handle(EmailManagerConfig config) {
+    public synchronized void handle(EmailManagerConfig config) {
 
         if (config == null) {
             logger.error("No configuration to update");
@@ -93,6 +94,7 @@ public class UpdateJamesService extends AbstractBasics implements EventCallback<
             });
             {
                 List<EmailManagerConfigAccount> existing = jdbcTemplate.query("SELECT USER_NAME, PASSWORD FROM JAMES_USER ORDER BY USER_NAME", new RowMapper<EmailManagerConfigAccount>() {
+
                     @Override
                     public EmailManagerConfigAccount mapRow(ResultSet rs, int rowNum) throws SQLException {
                         EmailManagerConfigAccount item = new EmailManagerConfigAccount();
@@ -181,10 +183,12 @@ public class UpdateJamesService extends AbstractBasics implements EventCallback<
             }
 
         } catch (Exception e) {
-            logger.error("Problem updating the James configuration in the Database", e);
+            logger.error("Problem updating the James configuration in the Database. Will retry later. Exception: {}", e.getMessage());
+            throw new RetryException();
+        } finally {
+            logger.info("[END] Updating the James configuration");
         }
 
-        logger.info("[END] Updating the James configuration");
     }
 
     @PostConstruct

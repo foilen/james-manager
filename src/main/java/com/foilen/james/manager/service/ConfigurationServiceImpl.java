@@ -11,12 +11,14 @@ package com.foilen.james.manager.service;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.foilen.james.manager.RetryException;
 import com.foilen.james.manager.config.EmailManagerConfig;
 import com.foilen.james.manager.config.EmailManagerConfigDatabase;
 import com.foilen.smalltools.event.EventCallback;
@@ -26,15 +28,26 @@ import com.foilen.smalltools.filesystemupdatewatcher.handler.OneFileUpdateNotify
 import com.foilen.smalltools.tools.AbstractBasics;
 import com.foilen.smalltools.tools.AssertTools;
 import com.foilen.smalltools.tools.JsonTools;
+import com.foilen.smalltools.tools.ThreadTools;
 
 @Component
-public class ConfigurationServiceImpl extends AbstractBasics implements ConfigurationService, OneFileUpdateNotifyerHandler {
+public class ConfigurationServiceImpl extends AbstractBasics implements ConfigurationService, OneFileUpdateNotifyerHandler, Runnable {
 
     @Value("${CONFIG_FILE}")
     private String configFile;
 
     private EventList<EmailManagerConfig> updateEvent = new EventList<>();
     private EmailManagerConfig emailManagerConfig;
+
+    private OneFileUpdateNotifyer notifyer;
+
+    private AtomicBoolean lasttimeFailed = new AtomicBoolean();
+
+    public ConfigurationServiceImpl() {
+        Thread thread = new Thread(this, "Retry update");
+        thread.setDaemon(false);
+        thread.start();
+    }
 
     @Override
     public void addConfigurationUpdateCallback(EventCallback<EmailManagerConfig> callback) {
@@ -43,6 +56,8 @@ public class ConfigurationServiceImpl extends AbstractBasics implements Configur
         if (emailManagerConfig != null) {
             try {
                 callback.handle(emailManagerConfig);
+            } catch (RetryException e) {
+                lasttimeFailed.set(true);
             } catch (Exception e) {
                 logger.error("Problem executing the callback", e);
             }
@@ -88,7 +103,12 @@ public class ConfigurationServiceImpl extends AbstractBasics implements Configur
         emailManagerConfig = newConfig;
 
         // Callbacks
-        updateEvent.dispatch(newConfig);
+        try {
+            updateEvent.dispatch(newConfig);
+            lasttimeFailed.set(false);
+        } catch (RetryException e) {
+            lasttimeFailed.set(true);
+        }
     }
 
     @Override
@@ -100,9 +120,23 @@ public class ConfigurationServiceImpl extends AbstractBasics implements Configur
     public void init() {
         configFile = new File(configFile).getAbsolutePath();
         logger.info("Initializing the watcher for config file {}", configFile);
-        @SuppressWarnings("resource")
-        OneFileUpdateNotifyer notifyer = new OneFileUpdateNotifyer(configFile, this);
+        notifyer = new OneFileUpdateNotifyer(configFile, this);
         notifyer.initAutoUpdateSystem();
+    }
+
+    /**
+     * Check if needs retry.
+     */
+    @Override
+    public void run() {
+
+        for (;;) {
+            ThreadTools.sleep(13000);
+            if (lasttimeFailed.get()) {
+                notifyer.modified(new File(configFile));
+            }
+        }
+
     }
 
 }
