@@ -24,5 +24,5 @@ cp -rv DEBIAN $DEB_PATH/
 tar -xf build/distributions/james-manager-boot-$VERSION.tar --strip 1 -C $DEB_PATH/opt/james-manager/
 
 cd $DEB_PATH/..
-dpkg-deb --build james-manager
+dpkg-deb --no-uniform-compression --build james-manager
 mv james-manager.deb $DEB_FILE
