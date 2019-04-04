@@ -70,6 +70,7 @@ public class UpdateJamesService extends AbstractBasics implements EventCallback<
                 // Update domains
                 {
                     List<String> existing = jdbcTemplate.queryForList("SELECT DOMAIN_NAME FROM JAMES_DOMAIN ORDER BY DOMAIN_NAME", String.class);
+                    config.getDomains().add("localhost");
                     List<String> desired = config.getDomains().stream().sorted().distinct().collect(Collectors.toList());
                     logger.info("[DOMAIN] Got {} existing and {} desired", existing.size(), desired.size());
 
