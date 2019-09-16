@@ -1,7 +1,7 @@
 /*
     James Manager
     https://github.com/foilen/james-manager
-    Copyright (c) 2018 Foilen (http://foilen.com)
+    Copyright (c) 2018-2019 Foilen (http://foilen.com)
 
     The MIT License
     http://opensource.org/licenses/MIT
