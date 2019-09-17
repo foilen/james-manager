@@ -190,6 +190,16 @@ public class UpdateJamesService extends AbstractBasics implements EventCallback<
                         }
                     });
                 }
+
+                // Cleanup
+                cleanup(jdbcTemplate, "FOILEN_REDIRECTIONS", "FROM_DOMAIN", "JAMES_DOMAIN", "DOMAIN_NAME");
+                cleanup(jdbcTemplate, "JAMES_MAX_DOMAIN_MESSAGE_COUNT", "DOMAIN", "JAMES_DOMAIN", "DOMAIN_NAME");
+                cleanup(jdbcTemplate, "JAMES_MAX_DOMAIN_STORAGE", "DOMAIN", "JAMES_DOMAIN", "DOMAIN_NAME");
+                cleanup(jdbcTemplate, "JAMES_RECIPIENT_REWRITE", "DOMAIN_NAME", "JAMES_DOMAIN", "DOMAIN_NAME");
+
+                cleanup(jdbcTemplate, "JAMES_SUBSCRIPTION", "USER_NAME", "JAMES_USER", "USER_NAME");
+                cleanup(jdbcTemplate, "JAMES_MAILBOX", "USER_NAME", "JAMES_USER", "USER_NAME");
+
             });
 
         } catch (Exception e) {
@@ -199,6 +209,31 @@ public class UpdateJamesService extends AbstractBasics implements EventCallback<
             logger.info("[END] Updating the James configuration");
         }
 
+    }
+
+    private void cleanup(JdbcTemplate jdbcTemplate, String table, String column, String pivotTable, String pivotColumn) {
+        List<String> existing = jdbcTemplate.queryForList("SELECT DISTINCT " + column + " FROM " + table + " ORDER BY " + column, String.class);
+        List<String> desired = jdbcTemplate.queryForList("SELECT DISTINCT " + pivotColumn + " FROM " + pivotTable + " ORDER BY " + pivotColumn, String.class);
+
+        logger.info("[{}] Got {} existing and {} desired", table, existing.size(), desired.size());
+
+        ListsComparator.compareLists(existing, desired, new ListComparatorHandler<String, String>() {
+
+            @Override
+            public void both(String existing, String desired) {
+                logger.info("[{}] Keep {}", table, existing);
+            }
+
+            @Override
+            public void leftOnly(String existing) {
+                logger.info("[{}] Delete {}", table, existing);
+                jdbcTemplate.update("DELETE FROM " + table + " WHERE " + column + " = ?", existing);
+            }
+
+            @Override
+            public void rightOnly(String desired) {
+            }
+        });
     }
 
     @PostConstruct
